@@ -668,7 +668,7 @@ app.get('/', (req, res) => {
 
             // Mettre à jour l'affichage
             document.getElementById('displayName').textContent = username;
-            document.getElementById('displayUUID').textContent = `UUID: ${uuid.substring(0, 8)}...`;
+            document.getElementById('displayUUID').textContent = 'UUID: ' + uuid.substring(0, 8) + '...';
             
             // Cacher la setup box, afficher l'interface principale
             document.getElementById('setupBox').style.display = 'none';

@@ -3,22 +3,8 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const axios = require('axios');
-const cors = require('cors');
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Configuration
-const GITHUB_TOKEN = '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';
-const GITHUB_REPO = 'terrarpg/server-skin-zendariom';
-const GITHUB_API = 'https://api.github.com';
-
-// Middleware CORS
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+const PORT = process.env.PORT || 10000;
 
 // Configuration Multer
 const storage = multer.diskStorage({
@@ -30,9 +16,9 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        const uuid = crypto.randomBytes(16).toString('hex');
         const timestamp = Date.now();
-        const filename = `${uuid}_${timestamp}.png`;
+        const randomStr = crypto.randomBytes(8).toString('hex');
+        const filename = `${timestamp}_${randomStr}.png`;
         cb(null, filename);
     }
 });
@@ -49,18 +35,26 @@ const upload = multer({
     }
 });
 
+// Middleware CORS
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    next();
+});
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Route racine - Interface HTML complète
+// Route racine - Interface simplifiée
 app.get('/', (req, res) => {
     const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sélection de Skin/Cape Minecraft</title>
+    <title>Système Skin/Cape Minecraft</title>
     <style>
         * {
             margin: 0;
@@ -69,352 +63,301 @@ app.get('/', (req, res) => {
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #fff;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
             min-height: 100vh;
-            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 1200px;
             padding: 20px;
         }
 
-        header {
+        .header {
             text-align: center;
             margin-bottom: 30px;
-            padding: 25px;
-            background: rgba(30, 41, 59, 0.8);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        h1 {
-            font-size: 2.8rem;
+        .header h1 {
+            color: #4CAF50;
+            font-size: 2.5rem;
             margin-bottom: 10px;
-            background: linear-gradient(45deg, #60a5fa, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
-        .subtitle {
-            font-size: 1.3rem;
-            opacity: 0.9;
-            color: #cbd5e1;
+        .header .subtitle {
+            color: #ccc;
+            font-size: 1.1rem;
         }
 
-        .player-setup {
-            background: rgba(30, 41, 59, 0.8);
-            border-radius: 15px;
-            padding: 25px;
+        .setup-box {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 30px;
             margin-bottom: 30px;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid #3d3d3d;
         }
 
-        .setup-input {
+        .setup-box h2 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .input-group {
             margin-bottom: 20px;
         }
 
-        .setup-input label {
+        .input-group label {
             display: block;
-            margin-bottom: 10px;
-            color: #93c5fd;
-            font-weight: 600;
-            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 1.1rem;
         }
 
-        .setup-input input {
-            width: 300px;
-            padding: 15px;
-            border-radius: 10px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: rgba(15, 23, 42, 0.8);
+        .input-group input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px;
+            border: 2px solid #3d3d3d;
+            border-radius: 6px;
+            background: #1a1a1a;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             text-align: center;
-            transition: all 0.3s ease;
         }
 
-        .setup-input input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-
-        .connect-btn {
-            padding: 15px 40px;
-            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
-            border: none;
-            border-radius: 10px;
+        .btn {
+            padding: 12px 30px;
+            background: #4CAF50;
             color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
+            transition: background 0.3s;
         }
 
-        .connect-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(59, 130, 246, 0.4);
+        .btn:hover {
+            background: #45a049;
         }
 
-        .connect-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .main-interface {
+        .interface-grid {
             display: grid;
-            grid-template-columns: 250px 1fr 250px;
+            grid-template-columns: 300px 1fr;
             gap: 20px;
-            min-height: 700px;
+            min-height: 500px;
         }
 
-        @media (max-width: 1200px) {
-            .main-interface {
+        @media (max-width: 768px) {
+            .interface-grid {
                 grid-template-columns: 1fr;
             }
         }
 
         .action-panel {
-            background: rgba(30, 41, 59, 0.8);
-            border-radius: 15px;
+            background: #2d2d2d;
+            border-radius: 10px;
             padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid #3d3d3d;
         }
 
-        .action-panel h2 {
-            color: #60a5fa;
+        .action-panel h3 {
+            color: #4CAF50;
             margin-bottom: 20px;
-            font-size: 1.3rem;
             text-align: center;
+            font-size: 1.5rem;
         }
 
         .action-btn {
             width: 100%;
             padding: 15px;
-            margin-bottom: 15px;
-            border: none;
-            border-radius: 10px;
+            margin-bottom: 10px;
+            background: #333;
+            color: white;
+            border: 2px solid #444;
+            border-radius: 8px;
             font-size: 1.1rem;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            color: white;
+            transition: all 0.3s;
         }
 
         .action-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #444;
+            border-color: #4CAF50;
         }
 
-        .btn-skin {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        .skin-btn {
+            border-color: #2196F3;
         }
 
-        .btn-cape {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        .skin-btn:hover {
+            border-color: #1976D2;
         }
 
-        .btn-history {
-            background: linear-gradient(135deg, #10b981, #059669);
+        .cape-btn {
+            border-color: #9C27B0;
         }
 
-        .center-panel {
-            background: rgba(15, 23, 42, 0.8);
-            border-radius: 15px;
+        .cape-btn:hover {
+            border-color: #7B1FA2;
+        }
+
+        .history-btn {
+            border-color: #FF9800;
+        }
+
+        .history-btn:hover {
+            border-color: #F57C00;
+        }
+
+        .viewer-panel {
+            background: #2d2d2d;
+            border-radius: 10px;
             padding: 20px;
+            border: 2px solid #3d3d3d;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .player-display {
+        .player-info {
             text-align: center;
             margin-bottom: 30px;
         }
 
-        .player-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            border: 3px solid #3b82f6;
-            margin: 0 auto 15px;
-            background: linear-gradient(45deg, #1e293b, #0f172a);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            color: #60a5fa;
-        }
-
         .player-name {
-            font-size: 1.5rem;
-            color: #60a5fa;
+            color: #4CAF50;
+            font-size: 1.8rem;
             margin-bottom: 5px;
         }
 
         .player-uuid {
-            font-size: 0.9rem;
-            color: #94a3b8;
+            color: #888;
             font-family: monospace;
-            background: rgba(0, 0, 0, 0.3);
+            font-size: 0.9rem;
+            background: #1a1a1a;
             padding: 5px 10px;
-            border-radius: 5px;
+            border-radius: 4px;
             display: inline-block;
         }
 
-        .skin-viewer {
-            width: 100%;
-            height: 400px;
+        .skin-display {
+            width: 200px;
+            height: 300px;
+            background: #1a1a1a;
+            border: 3px solid #3d3d3d;
+            border-radius: 10px;
             position: relative;
+            overflow: hidden;
             margin: 20px 0;
         }
 
-        .skin-container {
+        .skin-model {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 200px;
-            height: 400px;
-            transform-style: preserve-3d;
-            animation: rotate 30s infinite linear;
-        }
-
-        @keyframes rotate {
-            0% { transform: translate(-50%, -50%) rotateY(0deg); }
-            100% { transform: translate(-50%, -50%) rotateY(360deg); }
+            width: 100px;
+            height: 200px;
         }
 
         .skin-part {
             position: absolute;
-            background: rgba(59, 130, 246, 0.1);
-            border: 2px solid rgba(59, 130, 246, 0.3);
+            background: #555;
+            border: 1px solid #777;
         }
 
-        .part-head {
-            width: 64px;
-            height: 64px;
-            top: 0;
-            left: 68px;
+        .head {
+            width: 40px;
+            height: 40px;
+            top: 10px;
+            left: 30px;
+            background: #4CAF50;
         }
 
-        .part-body {
-            width: 64px;
-            height: 96px;
-            top: 70px;
-            left: 68px;
+        .body {
+            width: 50px;
+            height: 70px;
+            top: 55px;
+            left: 25px;
+            background: #2196F3;
         }
 
-        .part-arm-left {
-            width: 32px;
-            height: 96px;
-            top: 70px;
-            left: 20px;
+        .arm-left, .arm-right {
+            width: 20px;
+            height: 60px;
+            top: 60px;
         }
 
-        .part-arm-right {
-            width: 32px;
-            height: 96px;
-            top: 70px;
-            left: 148px;
+        .arm-left {
+            left: 0;
+            background: #FF9800;
         }
 
-        .part-leg-left {
-            width: 32px;
-            height: 96px;
-            top: 172px;
-            left: 84px;
+        .arm-right {
+            right: 0;
+            background: #FF9800;
         }
 
-        .part-leg-right {
-            width: 32px;
-            height: 96px;
-            top: 172px;
-            left: 116px;
+        .leg-left, .leg-right {
+            width: 20px;
+            height: 60px;
+            top: 130px;
         }
 
-        .cape-layer {
+        .leg-left {
+            left: 30px;
+            background: #9C27B0;
+        }
+
+        .leg-right {
+            right: 30px;
+            background: #9C27B0;
+        }
+
+        .cape {
             position: absolute;
-            width: 64px;
-            height: 96px;
-            top: 70px;
-            left: 68px;
-            background: rgba(139, 92, 246, 0.2);
-            border: 2px solid rgba(139, 92, 246, 0.4);
-            transform: translateZ(-5px);
+            width: 50px;
+            height: 70px;
+            top: 55px;
+            left: 25px;
+            background: rgba(156, 39, 176, 0.3);
+            border: 1px solid #9C27B0;
         }
 
-        .history-panel {
-            background: rgba(30, 41, 59, 0.8);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .history-panel h2 {
-            color: #60a5fa;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
+        .current-selection {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 8px;
             text-align: center;
+            width: 100%;
+            max-width: 300px;
         }
 
-        .history-list {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 12px;
+        .current-selection h4 {
+            color: #4CAF50;
             margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        .history-item:hover {
-            background: rgba(59, 130, 246, 0.1);
-            transform: translateX(5px);
+        .selection-item {
+            color: #ccc;
+            margin: 5px 0;
+            font-size: 0.9rem;
         }
 
-        .history-type {
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-right: 10px;
-        }
-
-        .type-skin {
-            background: rgba(59, 130, 246, 0.3);
-            color: #60a5fa;
-        }
-
-        .type-cape {
-            background: rgba(139, 92, 246, 0.3);
-            color: #a78bfa;
-        }
-
-        .history-date {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            margin-top: 5px;
-        }
-
-        .modal-overlay {
+        .modal {
             display: none;
             position: fixed;
             top: 0;
@@ -428,185 +371,266 @@ app.get('/', (req, res) => {
         }
 
         .modal-content {
-            background: rgba(30, 41, 59, 0.95);
-            border-radius: 20px;
+            background: #2d2d2d;
+            border-radius: 10px;
             padding: 30px;
             width: 90%;
             max-width: 500px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-title {
-            color: #60a5fa;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
+            border: 2px solid #3d3d3d;
             text-align: center;
         }
 
-        .file-upload-area {
-            border: 3px dashed rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
+        .modal h3 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .file-upload {
+            border: 3px dashed #555;
+            border-radius: 8px;
             padding: 40px 20px;
             margin: 20px 0;
             cursor: pointer;
-            text-align: center;
-            transition: all 0.3s ease;
+            transition: border-color 0.3s;
         }
 
-        .file-upload-area:hover {
-            border-color: #3b82f6;
-            background: rgba(59, 130, 246, 0.05);
+        .file-upload:hover {
+            border-color: #4CAF50;
         }
 
-        .upload-icon {
-            font-size: 3rem;
-            color: #60a5fa;
-            margin-bottom: 15px;
+        .file-upload p {
+            color: #ccc;
+            margin: 10px 0;
+        }
+
+        .file-info {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 15px 0;
+            display: none;
         }
 
         .modal-buttons {
             display: flex;
             gap: 10px;
-            margin-top: 25px;
+            margin-top: 20px;
         }
 
         .modal-btn {
             flex: 1;
-            padding: 15px;
+            padding: 12px;
             border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            border-radius: 6px;
+            font-size: 1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        .modal-btn.primary {
-            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+        .cancel-btn {
+            background: #666;
             color: white;
         }
 
-        .modal-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
+        .upload-btn {
+            background: #4CAF50;
             color: white;
+        }
+
+        .upload-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
         }
 
         .message {
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
             text-align: center;
-            font-weight: 600;
             display: none;
         }
 
         .success {
-            background: rgba(34, 197, 94, 0.2);
-            border: 1px solid #22c55e;
-            color: #22c55e;
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
         }
 
         .error {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid #ef4444;
-            color: #ef4444;
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
         }
 
-        .loading {
+        .history-panel {
+            display: none;
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #3d3d3d;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-header h4 {
+            color: #4CAF50;
+        }
+
+        .close-history {
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #1a1a1a;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border: 1px solid #333;
+        }
+
+        .history-type {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 10px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .type-skin {
+            background: #2196F3;
+            color: white;
+        }
+
+        .type-cape {
+            background: #9C27B0;
+            color: white;
+        }
+
+        .history-date {
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🎮 Système de Skin/Cape Minecraft</h1>
-            <p class="subtitle">UUID généré automatiquement - Stocké sur GitHub</p>
-        </header>
+        <div class="header">
+            <h1>🎮 Minecraft Skin/Cape System</h1>
+            <p class="subtitle">Gérez vos skins et capes simplement</p>
+        </div>
 
-        <div class="player-setup">
-            <div class="setup-input">
-                <label for="username">Entrez votre pseudo Minecraft</label>
+        <!-- Étape 1: Entrer pseudo -->
+        <div class="setup-box" id="setupBox">
+            <h2>Étape 1: Entrez votre pseudo</h2>
+            <div class="input-group">
+                <label for="username">Pseudo Minecraft</label>
                 <input type="text" id="username" placeholder="Votre pseudo...">
             </div>
-            <button class="connect-btn" onclick="initPlayer()" id="connectBtn">
-                Commencer
-            </button>
+            <button class="btn" onclick="startSystem()">Commencer</button>
         </div>
 
-        <div class="main-interface" id="mainInterface" style="display: none;">
-            <div class="action-panel">
-                <h2>Actions</h2>
-                <button class="action-btn btn-skin" onclick="openUploadModal('skin')">
-                    <span>👤</span> Ajouter un Skin
-                </button>
-                <button class="action-btn btn-cape" onclick="openUploadModal('cape')">
-                    <span>🦇</span> Ajouter une Cape
-                </button>
-                <button class="action-btn btn-history" onclick="loadHistory('skin')">
-                    <span>📜</span> Historique Skins
-                </button>
-                <button class="action-btn btn-history" onclick="loadHistory('cape')">
-                    <span>📜</span> Historique Capes
-                </button>
-            </div>
-
-            <div class="center-panel">
-                <div class="player-display">
-                    <div class="player-avatar" id="playerAvatar">?</div>
-                    <div class="player-name" id="displayPlayerName"></div>
-                    <div class="player-uuid" id="displayPlayerUUID"></div>
+        <!-- Interface principale (cachée au début) -->
+        <div id="mainInterface" class="hidden">
+            <div class="interface-grid">
+                <!-- Panneau gauche: Actions -->
+                <div class="action-panel">
+                    <h3>Actions</h3>
+                    <button class="action-btn skin-btn" onclick="openUpload('skin')">
+                        <span>👤</span> Ajouter un Skin (AS)
+                    </button>
+                    <button class="action-btn history-btn" onclick="showHistory('skin')">
+                        <span>📜</span> Mes Skins (HS)
+                    </button>
+                    <button class="action-btn cape-btn" onclick="openUpload('cape')">
+                        <span>🦇</span> Ajouter une Cape (AC)
+                    </button>
+                    <button class="action-btn history-btn" onclick="showHistory('cape')">
+                        <span>📜</span> Mes Capes (HC)
+                    </button>
                 </div>
 
-                <div class="skin-viewer">
-                    <div class="skin-container" id="skinContainer"></div>
+                <!-- Panneau droit: Visualisation -->
+                <div class="viewer-panel">
+                    <div class="player-info">
+                        <div class="player-name" id="displayName">Joueur</div>
+                        <div class="player-uuid" id="displayUUID">UUID: ...</div>
+                    </div>
+
+                    <div class="skin-display">
+                        <div class="skin-model">
+                            <div class="skin-part head"></div>
+                            <div class="skin-part body"></div>
+                            <div class="skin-part arm-left"></div>
+                            <div class="skin-part arm-right"></div>
+                            <div class="skin-part leg-left"></div>
+                            <div class="skin-part leg-right"></div>
+                            <div class="cape" id="capeLayer"></div>
+                        </div>
+                    </div>
+
+                    <div class="current-selection">
+                        <h4>💾 Sélection actuelle</h4>
+                        <div class="selection-item" id="currentSkinInfo">Skin: Aucun</div>
+                        <div class="selection-item" id="currentCapeInfo">Cape: Aucune</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="history-panel">
-                <h2 id="historyTitle">Historique</h2>
+            <!-- Panneau historique -->
+            <div class="history-panel" id="historyPanel">
+                <div class="history-header">
+                    <h4 id="historyTitle">Historique</h4>
+                    <button class="close-history" onclick="closeHistory()">✕ Fermer</button>
+                </div>
                 <div class="history-list" id="historyList">
-                    <div style="text-align:center;color:#94a3b8;padding:20px;">
-                        Aucun historique
-                    </div>
+                    <!-- L'historique s'affichera ici -->
                 </div>
             </div>
         </div>
 
-        <div class="modal-overlay" id="uploadModal">
+        <!-- Modale d'upload -->
+        <div class="modal" id="uploadModal">
             <div class="modal-content">
-                <div class="modal-title" id="modalTitle">Ajouter un Skin</div>
+                <h3 id="modalTitle">Ajouter un Skin</h3>
                 
-                <div class="file-upload-area" id="fileDropArea" 
-                     onclick="document.getElementById('fileInput').click()">
-                    <div class="upload-icon">📁</div>
-                    <div style="color:#cbd5e1;margin-bottom:10px;">
-                        Cliquez ou déposez votre fichier PNG
-                    </div>
-                    <div style="color:#94a3b8;font-size:0.9rem;">
+                <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                    <p style="font-size: 3rem;">📁</p>
+                    <p>Cliquez ou déposez votre fichier PNG</p>
+                    <p style="color: #888; font-size: 0.9rem;">
                         Format: 64x32 pixels (Skin) ou 64x64 pixels (Cape)
-                    </div>
+                    </p>
                 </div>
 
-                <input type="file" id="fileInput" accept=".png" style="display:none;">
+                <input type="file" id="fileInput" accept=".png" style="display: none;">
 
-                <div style="margin:15px 0;display:none;" id="selectedFile"></div>
+                <div class="file-info" id="fileInfo"></div>
 
                 <div class="modal-buttons">
-                    <button class="modal-btn secondary" onclick="closeModal()">
+                    <button class="modal-btn cancel-btn" onclick="closeModal()">
                         Annuler
                     </button>
-                    <button class="modal-btn primary" id="uploadBtn" onclick="uploadFile()" disabled>
+                    <button class="modal-btn upload-btn" id="uploadBtn" onclick="uploadFile()" disabled>
                         Uploader
                     </button>
                 </div>
@@ -617,65 +641,69 @@ app.get('/', (req, res) => {
     </div>
 
     <script>
-        let currentPlayer = {
-            username: '',
-            uuid: '',
-            skins: [],
-            capes: []
-        };
-
+        // Variables globales
+        let currentPlayer = null;
         let currentUploadType = 'skin';
         let selectedFile = null;
 
-        // Initialiser le joueur
-        function initPlayer() {
-            const username = document.getElementById('username').value.trim();
+        // Démarrer le système
+        function startSystem() {
+            const usernameInput = document.getElementById('username');
+            const username = usernameInput.value.trim();
             
             if (!username) {
                 alert('Veuillez entrer un pseudo !');
                 return;
             }
 
-            // Générer UUID unique
-            currentPlayer.uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            // Générer un UUID unique
+            const uuid = generateUUID();
+            
+            currentPlayer = {
+                username: username,
+                uuid: uuid,
+                currentSkin: null,
+                currentCape: null
+            };
+
+            // Mettre à jour l'affichage
+            document.getElementById('displayName').textContent = username;
+            document.getElementById('displayUUID').textContent = `UUID: ${uuid.substring(0, 8)}...`;
+            
+            // Cacher la setup box, afficher l'interface principale
+            document.getElementById('setupBox').style.display = 'none';
+            document.getElementById('mainInterface').classList.remove('hidden');
+            
+            // Charger les données existantes
+            loadPlayerData();
+        }
+
+        // Générer UUID
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
-            
-            currentPlayer.username = username;
-
-            // Mettre à jour l'affichage
-            document.getElementById('displayPlayerName').textContent = username;
-            document.getElementById('displayPlayerUUID').textContent = currentPlayer.uuid;
-            document.getElementById('playerAvatar').textContent = username.charAt(0).toUpperCase();
-            
-            // Afficher l'interface
-            document.getElementById('mainInterface').style.display = 'grid';
-            document.querySelector('.player-setup').style.display = 'none';
-            
-            // Générer modèle 3D
-            generateSkinModel();
-            
-            // Charger l'historique
-            loadHistory('skin');
         }
 
         // Ouvrir modale d'upload
-        function openUploadModal(type) {
+        function openUpload(type) {
             currentUploadType = type;
-            document.getElementById('modalTitle').textContent = 
-                type === 'skin' ? 'Ajouter un Skin' : 'Ajouter une Cape';
-            document.getElementById('uploadModal').style.display = 'flex';
+            const modal = document.getElementById('uploadModal');
+            const title = document.getElementById('modalTitle');
+            
+            title.textContent = type === 'skin' ? 'Ajouter un Skin' : 'Ajouter une Cape';
+            document.getElementById('fileInfo').style.display = 'none';
             document.getElementById('uploadBtn').disabled = true;
             document.getElementById('uploadMessage').style.display = 'none';
-            document.getElementById('selectedFile').style.display = 'none';
             
-            // Configurer input file
+            // Configurer l'input file
             const fileInput = document.getElementById('fileInput');
             fileInput.onchange = handleFileSelect;
             fileInput.value = '';
             
+            modal.style.display = 'flex';
             selectedFile = null;
         }
 
@@ -698,12 +726,12 @@ app.get('/', (req, res) => {
             }
 
             selectedFile = file;
-            const fileInfo = document.getElementById('selectedFile');
+            const fileInfo = document.getElementById('fileInfo');
             
             fileInfo.innerHTML = \`
-                <strong>Fichier sélectionné:</strong><br>
-                📄 \${file.name}<br>
-                📏 \${(file.size / 1024).toFixed(2)} KB
+                <strong>📄 Fichier sélectionné:</strong><br>
+                Nom: \${file.name}<br>
+                Taille: \${(file.size / 1024).toFixed(2)} KB
             \`;
             fileInfo.style.display = 'block';
             
@@ -712,19 +740,18 @@ app.get('/', (req, res) => {
 
         // Uploader fichier
         async function uploadFile() {
-            if (!selectedFile || !currentPlayer.username) return;
+            if (!selectedFile || !currentPlayer) return;
             
             const uploadBtn = document.getElementById('uploadBtn');
             const messageDiv = document.getElementById('uploadMessage');
             
-            uploadBtn.innerHTML = '<span class="loading"></span> Upload...';
+            uploadBtn.innerHTML = 'Upload en cours...';
             uploadBtn.disabled = true;
             
             try {
                 const formData = new FormData();
                 formData.append('file', selectedFile);
                 formData.append('username', currentPlayer.username);
-                formData.append('autoGenerated', 'true');
                 
                 const response = await fetch(\`/api/upload/\${currentUploadType}\`, {
                     method: 'POST',
@@ -734,12 +761,21 @@ app.get('/', (req, res) => {
                 const result = await response.json();
                 
                 if (result.success) {
-                    showMessage(\`\${currentUploadType === 'skin' ? 'Skin' : 'Cape'} uploadé !\`, 'success');
+                    showMessage(\`\${currentUploadType === 'skin' ? 'Skin' : 'Cape'} uploadé avec succès !\`, 'success');
                     
-                    // Recharger historique
+                    // Mettre à jour l'affichage
+                    if (currentUploadType === 'skin') {
+                        currentPlayer.currentSkin = result.data;
+                        updateSkinInfo(result.data);
+                    } else {
+                        currentPlayer.currentCape = result.data;
+                        updateCapeInfo(result.data);
+                    }
+                    
+                    // Recharger l'historique
                     setTimeout(() => {
-                        loadHistory(currentUploadType);
                         closeModal();
+                        showHistory(currentUploadType);
                         uploadBtn.innerHTML = 'Uploader';
                     }, 1500);
                 } else {
@@ -754,94 +790,115 @@ app.get('/', (req, res) => {
             }
         }
 
-        // Charger historique
-        async function loadHistory(type) {
-            if (!currentPlayer.username) return;
+        // Afficher l'historique
+        async function showHistory(type) {
+            if (!currentPlayer) return;
+            
+            const panel = document.getElementById('historyPanel');
+            const title = document.getElementById('historyTitle');
+            const list = document.getElementById('historyList');
+            
+            title.textContent = type === 'skin' ? 'Mes Skins (HS)' : 'Mes Capes (HC)';
+            list.innerHTML = '<p style="color:#888;text-align:center;">Chargement...</p>';
             
             try {
-                document.getElementById('historyTitle').textContent = 
-                    type === 'skin' ? 'Historique Skins' : 'Historique Capes';
-                
                 const response = await fetch(\`/api/history/\${type}/\${currentPlayer.username}\`);
                 const history = await response.json();
                 
-                const historyList = document.getElementById('historyList');
-                
                 if (!history || history.length === 0) {
-                    historyList.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;">Aucun historique</div>';
-                    return;
+                    list.innerHTML = '<p style="color:#888;text-align:center;">Aucun historique</p>';
+                } else {
+                    let html = '';
+                    history.forEach((item, index) => {
+                        const date = new Date(item.lastDownload).toLocaleDateString('fr-FR');
+                        html += \`
+                            <div class="history-item">
+                                <div>
+                                    <span class="history-type \${type === 'skin' ? 'type-skin' : 'type-cape'}">
+                                        \${type === 'skin' ? 'SKIN' : 'CAPE'} #\${index + 1}
+                                    </span>
+                                    <span style="color:#ccc;">\${item.hash?.substring(0, 8) || 'N/A'}...</span>
+                                </div>
+                                <div class="history-date">\${date} - \${item.size} bytes</div>
+                                <button onclick="selectItem('\${item.hash}')" style="margin-top:5px;padding:3px 8px;background:#444;color:white;border:none;border-radius:3px;cursor:pointer;font-size:0.8rem;">
+                                    Sélectionner
+                                </button>
+                            </div>
+                        \`;
+                    });
+                    list.innerHTML = html;
                 }
                 
-                let html = '';
-                history.forEach((item, index) => {
-                    const date = new Date(item.lastDownload).toLocaleDateString('fr-FR');
-                    html += \`
-                        <div class="history-item">
-                            <div style="display:flex;justify-content:space-between;">
-                                <span class="history-type \${type === 'skin' ? 'type-skin' : 'type-cape'}">
-                                    \${type === 'skin' ? 'SKIN' : 'CAPE'} #\${index + 1}
-                                </span>
-                                <span class="history-date">\${date}</span>
-                            </div>
-                            <div style="margin-top:5px;color:#cbd5e1;">Hash: \${item.hash?.substring(0, 8)}...</div>
-                        </div>
-                    \`;
-                });
-                
-                historyList.innerHTML = html;
+                panel.style.display = 'block';
             } catch (error) {
-                console.error('Erreur historique:', error);
+                list.innerHTML = '<p style="color:#f44336;text-align:center;">Erreur de chargement</p>';
             }
         }
 
-        // Générer modèle 3D
-        function generateSkinModel() {
-            const container = document.getElementById('skinContainer');
-            container.innerHTML = '';
-            
-            // Créer les parties du skin
-            const parts = [
-                { className: 'skin-part part-head', top: 0, left: 68, width: 64, height: 64 },
-                { className: 'skin-part part-body', top: 70, left: 68, width: 64, height: 96 },
-                { className: 'skin-part part-arm-left', top: 70, left: 20, width: 32, height: 96 },
-                { className: 'skin-part part-arm-right', top: 70, left: 148, width: 32, height: 96 },
-                { className: 'skin-part part-leg-left', top: 172, left: 84, width: 32, height: 96 },
-                { className: 'skin-part part-leg-right', top: 172, left: 116, width: 32, height: 96 }
-            ];
-            
-            parts.forEach(part => {
-                const div = document.createElement('div');
-                div.className = part.className;
-                div.style.cssText = \`
-                    position: absolute;
-                    top: \${part.top}px;
-                    left: \${part.left}px;
-                    width: \${part.width}px;
-                    height: \${part.height}px;
-                    background: rgba(59, 130, 246, 0.1);
-                    border: 2px solid rgba(59, 130, 246, 0.3);
-                \`;
-                container.appendChild(div);
-            });
-            
-            // Ajouter cape (cachée par défaut)
-            const cape = document.createElement('div');
-            cape.className = 'cape-layer';
-            cape.style.cssText = \`
-                position: absolute;
-                top: 70px;
-                left: 68px;
-                width: 64px;
-                height: 96px;
-                background: rgba(139, 92, 246, 0.2);
-                border: 2px solid rgba(139, 92, 246, 0.4);
-                transform: translateZ(-5px);
-                display: none;
-            \`;
-            container.appendChild(cape);
+        // Fermer l'historique
+        function closeHistory() {
+            document.getElementById('historyPanel').style.display = 'none';
         }
 
-        // Afficher message
+        // Sélectionner un item depuis l'historique
+        function selectItem(hash) {
+            showMessage('Item sélectionné depuis l\'historique', 'success');
+            closeHistory();
+        }
+
+        // Charger les données du joueur
+        async function loadPlayerData() {
+            if (!currentPlayer) return;
+            
+            try {
+                // Charger le skin actuel
+                const skinResponse = await fetch(\`/api/current/skin/\${currentPlayer.username}\`);
+                if (skinResponse.ok) {
+                    const skinData = await skinResponse.json();
+                    currentPlayer.currentSkin = skinData;
+                    updateSkinInfo(skinData);
+                }
+                
+                // Charger la cape actuelle
+                const capeResponse = await fetch(\`/api/current/cape/\${currentPlayer.username}\`);
+                if (capeResponse.ok) {
+                    const capeData = await capeResponse.json();
+                    currentPlayer.currentCape = capeData;
+                    updateCapeInfo(capeData);
+                }
+            } catch (error) {
+                console.log('Aucune donnée existante');
+            }
+        }
+
+        // Mettre à jour les infos du skin
+        function updateSkinInfo(skinData) {
+            if (!skinData) return;
+            
+            document.getElementById('currentSkinInfo').textContent = \`Skin: \${skinData.hash?.substring(0, 8) || 'Nouveau'}...\`;
+            
+            // Mettre à jour la couleur du skin
+            const skinParts = document.querySelectorAll('.skin-part');
+            skinParts.forEach(part => {
+                if (!part.classList.contains('cape')) {
+                    part.style.background = skinData.type === 'skin' ? '#2196F3' : '#4CAF50';
+                }
+            });
+        }
+
+        // Mettre à jour les infos de la cape
+        function updateCapeInfo(capeData) {
+            if (!capeData) return;
+            
+            document.getElementById('currentCapeInfo').textContent = \`Cape: \${capeData.hash?.substring(0, 8) || 'Nouvelle'}...\`;
+            
+            // Afficher la cape
+            const capeLayer = document.getElementById('capeLayer');
+            capeLayer.style.display = 'block';
+            capeLayer.style.background = 'rgba(156, 39, 176, 0.5)';
+        }
+
+        // Afficher un message
         function showMessage(text, type) {
             const messageDiv = document.getElementById('uploadMessage');
             messageDiv.textContent = text;
@@ -855,7 +912,7 @@ app.get('/', (req, res) => {
 
         // Gérer drag & drop
         document.addEventListener('DOMContentLoaded', function() {
-            const dropArea = document.getElementById('fileDropArea');
+            const dropArea = document.querySelector('.file-upload');
             
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 dropArea.addEventListener(eventName, preventDefaults, false);
@@ -867,34 +924,24 @@ app.get('/', (req, res) => {
             }
             
             ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.addEventListener(eventName, highlight, false);
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.style.borderColor = '#4CAF50';
+                }, false);
             });
             
             ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, unhighlight, false);
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.style.borderColor = '#555';
+                }, false);
             });
             
-            function highlight() {
-                dropArea.style.borderColor = '#3b82f6';
-                dropArea.style.background = 'rgba(59, 130, 246, 0.05)';
-            }
-            
-            function unhighlight() {
-                dropArea.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                dropArea.style.background = '';
-            }
-            
-            dropArea.addEventListener('drop', handleDrop, false);
-            
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                
+            dropArea.addEventListener('drop', function(e) {
+                const files = e.dataTransfer.files;
                 if (files.length > 0) {
                     handleFile(files[0]);
                     document.getElementById('fileInput').files = files;
                 }
-            }
+            }, false);
         });
     </script>
 </body>
@@ -905,36 +952,38 @@ app.get('/', (req, res) => {
 
 // ============ API ROUTES ============
 
-// Test API
+// Route de test
 app.get('/api/test', (req, res) => {
     res.json({ 
         status: 'OK', 
         message: 'API Minecraft Skin System',
-        version: '1.0.0'
+        version: '1.0'
     });
 });
 
 // Upload skin/cape
 app.post('/api/upload/:type', upload.single('file'), async (req, res) => {
     try {
+        console.log('Upload request for:', req.params.type);
+        
         const { type } = req.params;
-        const { username, autoGenerated = 'true' } = req.body;
+        const { username } = req.body;
         
         if (!username || !username.trim()) {
             return res.status(400).json({ 
                 success: false,
-                error: 'Le pseudo est requis' 
+                error: 'Pseudo requis' 
             });
         }
 
         if (!req.file) {
             return res.status(400).json({ 
                 success: false,
-                error: 'Aucun fichier uploadé' 
+                error: 'Aucun fichier' 
             });
         }
 
-        // Vérifier fichier
+        // Vérifier le fichier
         if (!req.file.mimetype.includes('png')) {
             fs.unlinkSync(req.file.path);
             return res.status(400).json({ 
@@ -943,43 +992,49 @@ app.post('/api/upload/:type', upload.single('file'), async (req, res) => {
             });
         }
 
-        // Lire fichier
+        // Lire le fichier
         const fileBuffer = fs.readFileSync(req.file.path);
         const fileSize = fileBuffer.length;
         const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex').substring(0, 16);
         
-        // Générer UUID
-        const uuid = crypto.randomBytes(16).toString('hex');
+        // Créer un ID unique
+        const fileId = Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
         
-        // Créer données
+        // Créer les données
         const fileData = {
             username: username.trim(),
-            uuid: uuid,
+            fileId: fileId,
             size: fileSize,
             hash: fileHash,
             lastDownload: new Date().toISOString(),
-            animated: false,
-            source: 'web',
             type: type,
-            autoGenerated: autoGenerated === 'true'
+            filename: req.file.filename
         };
 
-        // Sauvegarder localement pour test
-        const localData = {
-            ...fileData,
-            localPath: req.file.path
-        };
+        // Créer le dossier de stockage
+        const storageDir = path.join(__dirname, 'data', username.trim(), type);
+        if (!fs.existsSync(storageDir)) {
+            fs.mkdirSync(storageDir, { recursive: true });
+        }
 
-        // Nettoyer fichier
+        // Sauvegarder le fichier
+        const filePath = path.join(storageDir, `${fileId}.png`);
+        fs.writeFileSync(filePath, fileBuffer);
+        
+        // Sauvegarder les métadonnées
+        const metaPath = path.join(storageDir, `${fileId}.json`);
+        fs.writeFileSync(metaPath, JSON.stringify(fileData, null, 2));
+        
+        // Mettre à jour le fichier du joueur
+        updatePlayerFile(username.trim(), type, fileData);
+
+        // Nettoyer
         fs.unlinkSync(req.file.path);
 
-        // Pour le moment, retourner succès sans GitHub
-        // (À activer quand le token GitHub est valide)
         res.json({
             success: true,
-            message: `${type === 'skin' ? 'Skin' : 'Cape'} uploadé avec succès`,
-            data: fileData,
-            note: 'GitHub upload désactivé - Stockage local uniquement'
+            message: `${type === 'skin' ? 'Skin' : 'Cape'} uploadé`,
+            data: fileData
         });
 
     } catch (error) {
@@ -991,87 +1046,136 @@ app.post('/api/upload/:type', upload.single('file'), async (req, res) => {
         
         res.status(500).json({ 
             success: false,
-            error: 'Erreur lors de l\'upload',
+            error: 'Erreur upload',
             details: error.message 
         });
     }
 });
 
-// Récupérer historique
-app.get('/api/history/:type/:username', async (req, res) => {
+// Récupérer l'historique
+app.get('/api/history/:type/:username', (req, res) => {
     try {
         const { type, username } = req.params;
+        const userDir = path.join(__dirname, 'data', username.trim(), type);
         
-        // Pour le moment, retourner un exemple
-        // (À remplacer par la récupération depuis GitHub)
-        const exampleHistory = [
-            {
-                username: username,
-                uuid: 'example-uuid-123',
-                size: 2048,
-                hash: 'a1b2c3d4',
-                lastDownload: new Date().toISOString(),
-                type: type
-            }
-        ];
+        if (!fs.existsSync(userDir)) {
+            return res.json([]);
+        }
         
-        res.json(exampleHistory);
+        // Lire tous les fichiers JSON
+        const files = fs.readdirSync(userDir)
+            .filter(file => file.endsWith('.json'))
+            .map(file => {
+                const content = fs.readFileSync(path.join(userDir, file), 'utf8');
+                return JSON.parse(content);
+            })
+            .sort((a, b) => new Date(b.lastDownload) - new Date(a.lastDownload));
+        
+        res.json(files);
     } catch (error) {
         res.json([]);
     }
 });
 
-// Tous les joueurs
-app.get('/api/all-players', (req, res) => {
-    res.json({
-        players: [
-            {
-                username: "Exemple",
-                uuid: "123e4567-e89b-12d3-a456-426614174000",
-                skins: [],
-                capes: []
-            }
-        ]
-    });
-});
-
-// Vérifier GitHub
-app.get('/api/github-status', async (req, res) => {
+// Récupérer le skin/cape actuel
+app.get('/api/current/:type/:username', (req, res) => {
     try {
-        const response = await axios.get(
-            `${GITHUB_API}/repos/${GITHUB_REPO}`,
-            { 
-                headers: { 
-                    Authorization: `token ${GITHUB_TOKEN}`,
-                    'User-Agent': 'Minecraft-Skin-Server'
-                }
-            }
-        );
-        res.json({ 
-            status: 'CONNECTED', 
-            repo: response.data.name
-        });
+        const { type, username } = req.params;
+        const userDir = path.join(__dirname, 'data', username.trim(), type);
+        
+        if (!fs.existsSync(userDir)) {
+            return res.status(404).json({ error: 'Non trouvé' });
+        }
+        
+        // Lire le fichier le plus récent
+        const files = fs.readdirSync(userDir)
+            .filter(file => file.endsWith('.json'))
+            .sort()
+            .reverse();
+        
+        if (files.length === 0) {
+            return res.status(404).json({ error: 'Non trouvé' });
+        }
+        
+        const latestFile = files[0];
+        const content = fs.readFileSync(path.join(userDir, latestFile), 'utf8');
+        res.json(JSON.parse(content));
     } catch (error) {
-        res.json({ 
-            status: 'DISCONNECTED', 
-            error: 'Vérifiez votre token GitHub'
-        });
+        res.status(404).json({ error: 'Non trouvé' });
     }
 });
 
-// Démarrer serveur
-app.listen(PORT, () => {
-    console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
-    console.log(`📋 Interface: http://localhost:${PORT}`);
-    console.log(`🔧 API: http://localhost:${PORT}/api/test`);
-    console.log(`🌐 GitHub Status: http://localhost:${PORT}/api/github-status`);
+// Mettre à jour le fichier du joueur
+function updatePlayerFile(username, type, fileData) {
+    try {
+        const playerFile = path.join(__dirname, 'data', 'players.json');
+        let players = { players: [] };
+        
+        if (fs.existsSync(playerFile)) {
+            const content = fs.readFileSync(playerFile, 'utf8');
+            players = JSON.parse(content);
+        }
+        
+        // Trouver ou créer le joueur
+        let player = players.players.find(p => p.username === username);
+        if (!player) {
+            player = {
+                username: username,
+                skins: [],
+                capes: []
+            };
+            players.players.push(player);
+        }
+        
+        // Ajouter le fichier
+        if (type === 'skin') {
+            player.skins.unshift(fileData);
+            if (player.skins.length > 10) player.skins = player.skins.slice(0, 10);
+        } else {
+            player.capes.unshift(fileData);
+            if (player.capes.length > 10) player.capes = player.capes.slice(0, 10);
+        }
+        
+        // Sauvegarder
+        fs.writeFileSync(playerFile, JSON.stringify(players, null, 2));
+    } catch (error) {
+        console.error('Error updating player file:', error);
+    }
+}
+
+// Servir les fichiers
+app.get('/data/:username/:type/:filename', (req, res) => {
+    const { username, type, filename } = req.params;
+    const filePath = path.join(__dirname, 'data', username, type, filename);
+    
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ error: 'Fichier non trouvé' });
+    }
 });
 
-// Gestion erreurs
+// Démarrer le serveur
+app.listen(PORT, () => {
+    console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
+    console.log(`🎮 Interface: http://localhost:${PORT}`);
+    console.log(`🔧 API Test: http://localhost:${PORT}/api/test`);
+    
+    // Créer les dossiers nécessaires
+    const dirs = ['uploads', 'data'];
+    dirs.forEach(dir => {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+            console.log(`📁 Dossier créé: ${dir}`);
+        }
+    });
+});
+
+// Gestion des erreurs
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ 
-        error: 'Erreur interne du serveur',
+        error: 'Erreur serveur',
         message: err.message 
     });
 });

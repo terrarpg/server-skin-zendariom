@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Skin • Zendariom</title>
+    <style>
+        :root {
+            --primary: #6C5CE7;
+            --secondary: #00CEC9;
+            --dark: #0A0A0F;
+            --light: #FFFFFF;
+            --gray: #A0A8C9;
+            --success: #00D27A;
+            --error: #FF4757;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0A0A0F 0%, #151525 100%);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--secondary);
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .upload-form {
+            background: rgba(20, 20, 30, 0.8);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(108, 92, 231, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--light);
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(108, 92, 231, 0.2);
+            border-radius: 10px;
+            color: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+        
+        .file-upload {
+            position: relative;
+            margin-top: 10px;
+        }
+        
+        .file-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .file-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(108, 92, 231, 0.3);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-label:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary);
+        }
+        
+        .file-label.drag-over {
+            background: rgba(108, 92, 231, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--secondary);
+        }
+        
+        .file-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        .preview-image {
+            width: 128px;
+            height: 128px;
+            image-rendering: pixelated;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(108, 92, 231, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .message.success {
+            background: rgba(0, 210, 122, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            display: block;
+        }
+        
+        .message.error {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            display: block;
+        }
+        
+        .requirements {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+        
+        .requirements h3 {
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+        
+        .requirements ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .requirements li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--gray);
+        }
+        
+        .requirements li:last-child {
+            border-bottom: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--secondary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-link">← Retour à l'accueil</a>
+            <h1>📤 Uploader votre Skin</h1>
+            <p style="color: var(--gray);">Personnalisez votre apparence dans Zendariom</p>
+        </header>
+        
+        <div class="upload-form">
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="username">Pseudo Minecraft *</label>
+                    <input type="text" id="username" class="input-field" 
+                           placeholder="Ex: Steve, Alex, Herobrine" 
+                           required
+                           pattern="[a-zA-Z0-9_]{3,16}"
+                           title="3-16 caractères, lettres, chiffres, underscores">
+                    <small style="color: var(--gray); margin-top: 5px; display: block;">
+                        Votre pseudo exact Minecraft (identique à celui du jeu)
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Skin (64×64 pixels) *</label>
+                    <div class="file-upload">
+                        <input type="file" id="skinFile" class="file-input" accept="image/png" required>
+                        <div class="file-label" id="skinLabel">
+                            <div class="upload-icon">👤</div>
+                            <div>Cliquez ou glissez votre skin PNG</div>
+                            <div style="font-size: 0.9em; color: var(--gray); margin-top: 5px;">
+                                Format: PNG 64×64 pixels
+                            </div>
+                        </div>
+                    </div>
+                    <div class="file-preview" id="skinPreview" style="display: none;">
+                        <img class="preview-image" id="skinPreviewImg" src="" alt="Skin Preview">
+                        <div id="skinFileName"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Cape (optionnel)</label>
+                    <div class="file-upload">
+                        <input type="file" id="capeFile" class="file-input" accept="image/png">
+                        <div class="file-label" id="capeLabel">
+                            <div class="upload-icon">🦸</div>
+                            <div>Cliquez ou glissez votre cape PNG</div>
+                            <div style="font-size: 0.9em; color: var(--gray); margin-top: 5px;">
+                                Format: PNG (recommandé: 64×32)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="file-preview" id="capePreview" style="display: none;">
+                        <img class="preview-image" id="capePreviewImg" src="" alt="Cape Preview">
+                        <div id="capeFileName"></div>
+                    </div>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Upload en cours...</p>
+                </div>
+                
+                <div class="message" id="message"></div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    🚀 Uploader mon Skin
+                </button>
+            </form>
+        </div>
+        
+        <div class="requirements">
+            <h3>📋 Conditions requises</h3>
+            <ul>
+                <li>• Skin: PNG 64×64 pixels (format standard Minecraft)</li>
+                <li>• Cape: PNG (64×32 recommandé)</li>
+                <li>• Taille maximale: 5 Mo par fichier</li>
+                <li>• Le skin sera visible par tous les joueurs</li>
+                <li>• Les skins sont sauvegardés sur GitHub</li>
+                <li>• Compatible avec le launcher Zendariom</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // DOM Elements
+        const form = document.getElementById('uploadForm');
+        const skinFileInput = document.getElementById('skinFile');
+        const capeFileInput = document.getElementById('capeFile');
+        const skinLabel = document.getElementById('skinLabel');
+        const capeLabel = document.getElementById('capeLabel');
+        const skinPreview = document.getElementById('skinPreview');
+        const capePreview = document.getElementById('capePreview');
+        const skinPreviewImg = document.getElementById('skinPreviewImg');
+        const capePreviewImg = document.getElementById('capePreviewImg');
+        const skinFileName = document.getElementById('skinFileName');
+        const capeFileName = document.getElementById('capeFileName');
+        const loading = document.getElementById('loading');
+        const message = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // Gestion drag & drop
+        function setupDragDrop(fileInput, label) {
+            label.addEventListener

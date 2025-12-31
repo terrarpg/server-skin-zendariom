@@ -1,7 +1,7 @@
 {
-  "name": "minecraft-skin-server",
+  "name": "zendariom-skin-server",
   "version": "1.0.0",
-  "description": "Serveur complet avec interface intégrée pour skins/capes Minecraft",
+  "description": "Serveur de skins pour Zendariom avec sauvegarde GitHub",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,10 +10,11 @@
   "dependencies": {
     "express": "^4.18.2",
     "multer": "^1.4.5-lts.1",
-    "axios": "^1.6.0",
+    "axios": "^1.6.2",
+    "sharp": "^0.33.1",
     "cors": "^2.8.5"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
+  "engines": {
+    "node": ">=14.0.0"
   }
 }
